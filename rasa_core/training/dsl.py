@@ -16,6 +16,7 @@ from typing import Optional, List, Text, Any, Dict
 from rasa_core import utils
 from rasa_core.events import (
     ActionExecuted, UserUttered, Event)
+from rasa_core.slots import Slot, BooleanSlot, FloatSlot, CategoricalSlot
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.training.structures import (
     Checkpoint, STORY_END, STORY_START, StoryStep)
@@ -168,7 +169,7 @@ class StoryFileReader(object):
                              "object. Error: {}".format(line, e))
 
     @staticmethod
-    def _parse_event_line(line):
+    def _parse_event_line(domain, line):
         """Tries to parse a single line as an event with arguments."""
 
         # the regex matches "slot{"a": 1}"
@@ -178,11 +179,30 @@ class StoryFileReader(object):
             slots_str = m.group(2)
             parameters = StoryFileReader._parameters_from_json_string(slots_str,
                                                                       line)
+            if event_name == 'slot' and len(parameters.keys()) > 0:
+                StoryFileReader._validate_slot_event(domain, event_name, parameters)
             return event_name, parameters
         else:
             warnings.warn("Failed to parse action line '{}'. "
                           "Ignoring this line.".format(line))
             return "", {}
+
+    @staticmethod
+    def _validate_slot_event(domain, event_name, parameters):
+
+        for slot in domain.slots:
+            if slot.name in parameters.keys():
+                if isinstance(slot, BooleanSlot) and not isinstance(parameters[parameters.keys()[0]], bool):
+                    raise ValueError("BooleanSlot '{}' was set with the non boolean value: "
+                                     .format(slot.name, parameters[parameters.keys()[0]]))
+                elif isinstance(slot, CategoricalSlot) and parameters[parameters.keys()[0]] not in slot.values:
+                    raise ValueError("{} is not a category defined in the CategoricalSlot '{}'"
+                                     .format(parameters[parameters.keys()[0]], slot.name, ))
+                elif isinstance(slot, FloatSlot) and not isinstance(parameters[parameters.keys()[0]], float):
+                    raise ValueError("FloatSlot '{}' was set with the non float value: "
+                                     .format(slot.name, parameters[parameters.keys()[0]]))
+
+
 
     def process_lines(self, lines):
         # type: (List[Text]) -> List[StoryStep]
@@ -198,11 +218,11 @@ class StoryFileReader(object):
                     name = line[1:].strip("# ")
                     self.new_story_part(name)
                 elif line.startswith(">"):  # reached a checkpoint
-                    name, conditions = self._parse_event_line(line[1:].strip())
+                    name, conditions = self._parse_event_line(self.domain, line[1:].strip())
                     self.add_checkpoint(name, conditions)
                 elif line.startswith(
                         "-"):  # reached a slot, event, or executed action
-                    event_name, parameters = self._parse_event_line(line[1:])
+                    event_name, parameters = self._parse_event_line(self.domain, line[1:])
                     self.add_event(event_name, parameters)
                 elif line.startswith("*"):  # reached a user message
                     user_messages = [el.strip() for el in
@@ -213,6 +233,7 @@ class StoryFileReader(object):
                                 "Line Content: '{}'".format(line_num, line))
             except Exception as e:
                 msg = "Error in line {}: {}".format(line_num, e.message)
+                print (msg)
                 logger.error(msg, exc_info=1)
                 raise Exception(msg)
         self._add_current_stories_to_result()
