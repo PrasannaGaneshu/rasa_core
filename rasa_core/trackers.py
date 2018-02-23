@@ -208,10 +208,11 @@ class DialogueStateTracker(object):
                 undo_till_previous(ActionExecuted, applied_events)
             elif isinstance(event, UserUtteranceReverted):
                 # Seeing a user uttered event automatically implies there was
-                # a listen event right before it, so it is necessary to roll back another ActionExecuted
-                # to get the action right before the listen action.
-                # In Action.run you would `return [UserUtteranceReverted(), ActionReverted()]
+                # a listen event right before it, so we'll first rewind the
+                # user utterance, then get the action right before it (the
+                # listen action).
                 undo_till_previous(UserUttered, applied_events)
+                undo_till_previous(ActionExecuted, applied_events)
             else:
                 applied_events.append(event)
         return applied_events
