@@ -233,7 +233,6 @@ class StoryFileReader(object):
                                 "Line Content: '{}'".format(line_num, line))
             except Exception as e:
                 msg = "Error in line {}: {}".format(line_num, e.message)
-                print (msg)
                 logger.error(msg, exc_info=1)
                 raise Exception(msg)
         self._add_current_stories_to_result()
