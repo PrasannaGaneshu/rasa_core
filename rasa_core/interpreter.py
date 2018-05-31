@@ -100,7 +100,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
     @staticmethod
     def deprecated_extraction(user_input):
-        """DEPRECATED parse of user intput message."""
+        """DEPRECATED parse of user input message."""
 
         value_assign_rx = '\s*(.+)\s*=\s*(.+)\s*'
         prefixes = re.escape(RegexInterpreter.allowed_prefixes())
@@ -233,8 +233,5 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
     def _load_interpreter(self):
         from rasa_nlu.model import Interpreter
-        from rasa_nlu.config import RasaNLUConfig
 
-        self.interpreter = Interpreter.load(self.model_directory,
-                                            RasaNLUConfig(self.config_file,
-                                                          os.environ))
+        self.interpreter = Interpreter.load(self.model_directory)

@@ -25,7 +25,7 @@ def create_argument_parser():
             '-s', '--stories',
             type=str,
             required=True,
-            help="file that contains the stories to train on")
+            help="file or folder containing the training stories")
     parser.add_argument(
             '-o', '--out',
             type=str,
@@ -78,12 +78,17 @@ def create_argument_parser():
 
 
 def train_dialogue_model(domain_file, stories_file, output_path,
-                         use_online_learning=False, nlu_model_path=None,
+                         use_online_learning=False,
+                         nlu_model_path=None,
+                         max_history=None,
                          kwargs=None):
     if not kwargs:
         kwargs = {}
 
-    agent = Agent(domain_file, policies=[MemoizationPolicy(), KerasPolicy()])
+    agent = Agent(domain_file, policies=[
+        MemoizationPolicy(max_history=max_history),
+        KerasPolicy()])
+    training_data = agent.load_data(stories_file)
 
     if use_online_learning:
         if nlu_model_path:
@@ -91,15 +96,12 @@ def train_dialogue_model(domain_file, stories_file, output_path,
         else:
             agent.interpreter = RegexInterpreter()
         agent.train_online(
-                stories_file,
+                training_data,
                 input_channel=ConsoleInputChannel(),
                 model_path=output_path,
                 **kwargs)
     else:
-        agent.train(
-                stories_file,
-                **kwargs
-        )
+        agent.train(training_data, **kwargs)
 
     agent.persist(output_path)
 
@@ -113,7 +115,6 @@ if __name__ == '__main__':
     utils.configure_colored_logging(cmdline_args.loglevel)
 
     additional_arguments = {
-        "max_history": cmdline_args.history,
         "epochs": cmdline_args.epochs,
         "batch_size": cmdline_args.batch_size,
         "validation_split": cmdline_args.validation_split,
@@ -125,4 +126,5 @@ if __name__ == '__main__':
                          cmdline_args.out,
                          cmdline_args.online,
                          cmdline_args.nlu,
+                         cmdline_args.history,
                          additional_arguments)
