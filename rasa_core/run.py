@@ -226,9 +226,7 @@ def serve_application(initial_agent,
 def load_agent(core_model, interpreter, endpoints,
                tracker_store=None,
                wait_time_between_pulls=100):
-
     if endpoints.model:
-        print(endpoints.model)
         return agent.load_from_server(
                 interpreter=interpreter,
                 generator=endpoints.nlg,
