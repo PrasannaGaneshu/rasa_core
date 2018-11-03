@@ -66,7 +66,6 @@ def load_from_server(interpreter=None,  # type: NaturalLanguageInterpreter
                   action_endpoint=action_endpoint)
 
     if wait_time_between_pulls:
-        print ('start worker')
         # continuously pull the model every `wait_time_between_pulls` seconds
         start_model_pulling_in_worker(model_server,
                                       wait_time_between_pulls,
