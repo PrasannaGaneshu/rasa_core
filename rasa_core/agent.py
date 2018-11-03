@@ -66,6 +66,7 @@ def load_from_server(interpreter=None,  # type: NaturalLanguageInterpreter
                   action_endpoint=action_endpoint)
 
     if wait_time_between_pulls:
+        print ('start worker')
         # continuously pull the model every `wait_time_between_pulls` seconds
         start_model_pulling_in_worker(model_server,
                                       wait_time_between_pulls,
@@ -104,7 +105,10 @@ def _update_model_from_server(
         raise InvalidURL(model_server.url)
 
     model_directory = tempfile.mkdtemp()
-
+    # zip files usually have a root directory.
+    sub_directories = [x[0] for x in os.walk(model_directory)]
+    if len(sub_directories):
+        model_directory = sub_directories[0]
     new_model_fingerprint = _pull_model_and_fingerprint(
             model_server, model_directory, agent.fingerprint)
     if new_model_fingerprint:
